@@ -27,11 +27,12 @@ struct comando_monitor {
 
 /* Realiza la pregunta de si se desea salir de la chell y el bool
    'presione_ctrl_c' permite manejar la respuesta desde el fgets del 'while(!salir_shell)' */
-void control_c(){
-	printf("\n");
-	printf("¿Desea salir de la Shell?(Y/N)\n");
-	presione_ctrl_c = true;
+void control_c(int signo) {
+    printf("\n");
+    printf("¿Desea salir de la Shell?(Y/N)\n");
+    presione_ctrl_c = true;
 }
+
 
 
 /* Parsea input para identidicar el comando y sus argumentos */
