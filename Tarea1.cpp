@@ -6,14 +6,18 @@
 #include <string.h>
 #include <sys/wait.h>
 
+
 #define MAX_TAM_IMPUT 100
 #define CANT_MAX_PARAMETROS 10
 #define CANT_MAX_COMANDOS 3
+#define MAX_FAVS 100
+#define MAX_CMD_LEN 100
 
 bool presione_ctrl_c;
+char recordatorio[100];
 
 struct comandos {
-	char **argumentos;
+	char **argumentos; //array de strings
 };
 
 /* Para la creacion de comandos de monitoreo (item b.2) */
@@ -24,6 +28,15 @@ struct comando_monitor {
 	char z[11];
 };
 
+// Estructura para los favoritos
+struct Favorito {
+    int numero;
+    char comando[MAX_CMD_LEN];
+};
+
+struct Favorito lista_favoritos[MAX_CMD_LEN];
+int total_favoritos = 0;
+char archivo_favoritos[MAX_CMD_LEN]; // Ruta del archivo para almacenar favoritos
 
 /* Realiza la pregunta de si se desea salir de la chell y el bool
    'presione_ctrl_c' permite manejar la respuesta desde el fgets del 'while(!salir_shell)' */
@@ -33,10 +46,8 @@ void control_c(int signo) {
     presione_ctrl_c = true;
 }
 
-
-
 /* Parsea input para identidicar el comando y sus argumentos */
-struct comandos * parsear_entrada(char * input) { 
+struct comandos *parsear_entrada(char * input) { //usuario escribe algo y transf. las entras a llamada sist.
 	static struct comandos cmds_parseados[CANT_MAX_COMANDOS]; // (Global)
 	char * aux_c = NULL;
 	
@@ -44,8 +55,8 @@ struct comandos * parsear_entrada(char * input) {
 	for(int i = 0; i < CANT_MAX_COMANDOS ; ++i){
 		cmds_parseados[i].argumentos = (char**)malloc(CANT_MAX_PARAMETROS * sizeof(char*));
 		for(int j = 0; j < CANT_MAX_PARAMETROS; ++j){
-			cmds_parseados[i].argumentos[j] = (char*)malloc(sizeof(char));
-			cmds_parseados[i].argumentos[j] = NULL;
+			cmds_parseados[i].argumentos[j] = (char*)malloc(sizeof(char));//reserva memoria
+			cmds_parseados[i].argumentos[j] = NULL;//?sobre escribiendo puntero?arriba  no se recupera
 		}	
 	}
 
@@ -63,6 +74,7 @@ struct comandos * parsear_entrada(char * input) {
 	        cmds_parseados[i].argumentos[j] = aux_c;
 		}
     }
+	return cmds_parseados;
 }
 
 
@@ -85,6 +97,211 @@ int usar_pipe(int descIN, int descOUT, struct comandos cmds){
 }
 
 
+// Función para agregar un comando a favoritos
+void agregar_favorito(char *comando) {
+
+	
+    // Verifica si el comando ya está en favoritos
+    for (int i = 0; i < total_favoritos; i++) {
+        if (strcmp(lista_favoritos[i].comando, comando) == 0) {
+            //printf("El comando '%s' ya está en favoritos.\n", comando);
+            return;
+        }
+    }
+
+	// buscar indice mas pequeño disponible
+	int nuevo_indice = 0;
+	for(int i = 0; i < total_favoritos; i++){
+		if(lista_favoritos[i].numero == nuevo_indice){
+			nuevo_indice++;
+			i = 0;
+		}	
+	}
+
+    // Si no está en favoritos, lo agrega
+    if (total_favoritos < MAX_FAVS) {
+        lista_favoritos[total_favoritos].numero = nuevo_indice;
+        strcpy(lista_favoritos[total_favoritos].comando, comando);
+        total_favoritos++;
+        //printf("Comando '%s' agregado a favoritos.\n", comando);
+    } else {
+        //printf("Error: No se pueden agregar más favoritos.\n");
+    }
+}
+
+void eliminar_favoritos(char * numeros){
+	char *cursor;
+    cursor = strtok (numeros,",");
+    while (cursor != NULL) {
+        int num = atoi(cursor);
+		
+		for(int i = 0; i < total_favoritos; i++){
+			if(lista_favoritos[i].numero == num){
+				lista_favoritos[i] = lista_favoritos[--total_favoritos];
+			}	
+		}
+		//array[removeIndex] = array[--logicalSize];
+
+        cursor = strtok (NULL, ",");
+    }
+}
+
+// Función para mostrar los favoritos
+void mostrar_favoritos() {
+    if (total_favoritos == 0) {
+        printf("No hay comandos favoritos.\n");
+        return;
+    }
+
+    printf("Lista de comandos favoritos:\n");
+    for (int i = 0; i < total_favoritos; i++) {
+        printf("%d: %s\n", lista_favoritos[i].numero, lista_favoritos[i].comando);
+    }
+}
+
+void buscar_favoritos(char* palabra) {
+
+	bool alguno = false;
+	for (int i = 0; i < total_favoritos; i++) {
+		if (strstr(lista_favoritos[i].comando, palabra) == NULL) continue;
+
+		alguno = true;
+        printf("%d: %s\n", lista_favoritos[i].numero, lista_favoritos[i].comando);
+    }
+
+	if(!alguno) printf("No se encontro ningun comando.\n");
+}
+
+// Función para guardar los favoritos en un archivo
+void guardar_favoritos() {
+    FILE *archivo = fopen(archivo_favoritos, "w"); // Abrir en modo append para agregar comandos nuevos
+    if (archivo == NULL) {
+        printf("Error al abrir el archivo para guardar los favoritos.\n");
+        return;
+    }
+
+    for (int i = 0; i < total_favoritos; i++) {
+        fprintf(archivo, "%s\n", lista_favoritos[i].comando);
+    }
+
+    fclose(archivo);
+    printf("Favoritos guardados en %s.\n", archivo_favoritos);
+}
+
+// Función para cargar favoritos desde un archivo
+void cargar_favoritos() {
+    FILE *archivo = fopen(archivo_favoritos, "r");
+    if (archivo == NULL) {
+        printf("Error al abrir el archivo para cargar los favoritos.\n");
+        return;
+    }
+
+    char comando[MAX_CMD_LEN];
+    total_favoritos = 0; // Reinicia la lista en memoria antes de cargar
+    while (fgets(comando, sizeof(comando), archivo) != NULL) {
+        comando[strcspn(comando, "\n")] = '\0'; // Remueve el salto de línea
+        agregar_favorito(comando);
+    }
+
+    fclose(archivo);
+    printf("Favoritos cargados desde %s.\n", archivo_favoritos);
+}
+
+// Función para eliminar todos los favoritos
+void borrar_favoritos() {
+    total_favoritos = 0;
+    printf("Todos los favoritos han sido eliminados.\n");
+}
+
+// Función para manejar el comando "favs"
+void manejar_comando_favs(char **argumentos) {
+    if (strcmp(argumentos[1], "crear") == 0) {
+        strcpy(archivo_favoritos, argumentos[2]); // Establecer el nombre del archivo
+        // Crear el archivo vacío (o sobrescribir si ya existe)
+        FILE *archivo = fopen(archivo_favoritos, "w");
+        if (archivo == NULL) {
+            printf("Error al crear el archivo de favoritos: %s\n", archivo_favoritos);
+        } else {
+            printf("Archivo de favoritos creado: %s\n", archivo_favoritos);
+            fclose(archivo);
+        }
+    } else if (strcmp(argumentos[1], "agregar") == 0) {
+        char comando[MAX_CMD_LEN] = "";
+        for (int i = 2; argumentos[i] != NULL; i++) {
+            strcat(comando, argumentos[i]);
+            strcat(comando, " ");
+        }
+        agregar_favorito(comando);
+    } else if (strcmp(argumentos[1], "mostrar") == 0) {
+        mostrar_favoritos();
+    } else if (strcmp(argumentos[1], "guardar") == 0) {
+        guardar_favoritos();
+    } else if (strcmp(argumentos[1], "cargar") == 0) {
+		strcpy(archivo_favoritos, argumentos[2]); 
+        cargar_favoritos();
+    } else if (strcmp(argumentos[1], "borrar") == 0) {
+        borrar_favoritos();
+	} else if (strcmp(argumentos[1], "eliminar") == 0) {
+        eliminar_favoritos(argumentos[2]);
+    } else if (strcmp(argumentos[1], "buscar") == 0) {
+        buscar_favoritos(argumentos[2]);
+    } else if (strcmp(argumentos[2], "ejecutar") == 0) {
+        int num = atoi(argumentos[1]);
+		
+		if(total_favoritos < 1){
+        	printf("No hay favoritos cargados.\n");
+		}
+
+		bool encontrado = false;
+
+		for(int i = 0; i < total_favoritos; i++){
+			if(lista_favoritos[i].numero == num){
+				char input[MAX_TAM_IMPUT+1];
+				comandos * cmds;
+				encontrado = true;
+				
+				strcpy(input, lista_favoritos[i].comando);
+				cmds = parsear_entrada(input);
+
+				pid_t pid = fork();
+
+				if (pid < 0){ // Error
+					printf("No se pudo iniciar proceso\n");
+					exit(1); 
+
+				} else if (pid == 0){
+					execvp(cmds[0].argumentos[0], cmds[0].argumentos);
+
+					// Caso que el comando no se reconozca por execvp (item a.7)
+					printf("Comando Desconocido\n");
+					_exit(127); //Este exit es necesario para saber si fallo el execvp, Exit de comandos not found
+
+				}else{
+					// Padre espera por el hijo
+					int status; 
+					waitpid(pid, &status, 0); 
+				}
+			}
+		}
+
+		if(!encontrado) printf("No se encontro un comando favorito con el numero indicado\n");
+
+    } else {
+        printf("Comando favs desconocido: %s\n", argumentos[1]);
+	}
+}
+
+// Función para establecer recordatorio
+void set_recordatorio(int segundos, char *mensaje) {
+    printf("Recordatorio establecido para %d segundos: %s\n", segundos, mensaje);
+	strcpy(recordatorio, mensaje);
+	alarm(segundos);
+}
+
+void alarm_handler(int sig){
+    printf("Recordatorio: %s\n", recordatorio);  // Muestra el recordatorio
+}
+
 int main(){
 	struct comando_monitor cm;
 	bool agregar_comando;
@@ -98,12 +315,16 @@ int main(){
     size_t ret = getlogin_r(name, len);
     // Establece la maxima cantidad de caracteres que tolera el input
     char input[MAX_TAM_IMPUT+1];
+	char copia_input[MAX_TAM_IMPUT+1];
     struct comandos *cmds;
     // Condicion de salida de la shell
     bool salir_shell = false;
 
 	// Captura la senal "CTRL+C" y la maneja con la funcion "control_c" (item b.1)
 	signal(SIGINT, control_c);
+
+	// Captura la señal de la alarma y la maneja con la funcion "alarm_handler"
+	signal(SIGALRM, alarm_handler);
 	
     while(!salir_shell){
         // Prompt con nombre del usuario y color (item a.1)
@@ -154,13 +375,21 @@ int main(){
         }
 
         // Parsea el input (item 1.b)
+		strcpy(copia_input, input);
         cmds = parsear_entrada(input); // Divide el input en un arreglo de comandos
 
         // Caso comando "exit" (item a.6)
 		if (strcmp(cmds[0].argumentos[0], "exit") == 0){
 			salir_shell = true;
         	break;
-		}else{
+		} else if (strcmp(cmds[0].argumentos[0], "favs") == 0){
+			manejar_comando_favs(cmds[0].argumentos);
+            continue;
+		} else if (strcmp(cmds[0].argumentos[0], "set") == 0 && strcmp(cmds[0].argumentos[1], "recordatorio") == 0) {
+            int segundos = atoi(cmds[0].argumentos[2]);
+            set_recordatorio(segundos, cmds[0].argumentos[3]);
+            continue;
+        }else {
             // Caso lectura comando de monitoreo creado (item b.2)
 			if((strcmp(cmds[0].argumentos[0], cm.nombre_comando) == 0)&&(existe_nombre_comando == true)){
 				char monit[60];
@@ -215,6 +444,8 @@ int main(){
 
         // Ejecuta comando (sin pipes, solo 1) (item 1.3)
         if((cantidadcmds == 1)&&(agregar_comando != true)){
+
+			agregar_favorito(copia_input);
 
             pid_t pid = fork();
 
