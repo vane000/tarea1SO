@@ -13,14 +13,13 @@
 #define MAX_FAVS 100
 #define MAX_CMD_LEN 100
 
-bool presione_ctrl_c;
 char recordatorio[100];
 
 struct comandos {
 	char **argumentos; //array de strings
 };
 
-/* Para la creacion de comandos de monitoreo (item b.2) */
+/* Para la creacion de comandos de monitoreo  */
 struct comando_monitor {
 	char nombre_comando[30];
 	char tipo_comando[8];
@@ -38,13 +37,6 @@ struct Favorito lista_favoritos[MAX_CMD_LEN];
 int total_favoritos = 0;
 char archivo_favoritos[MAX_CMD_LEN]; // Ruta del archivo para almacenar favoritos
 
-/* Realiza la pregunta de si se desea salir de la chell y el bool
-   'presione_ctrl_c' permite manejar la respuesta desde el fgets del 'while(!salir_shell)' */
-void control_c(int signo) {
-    printf("\n");
-    printf("¿Desea salir de la Shell?(Y/N)\n");
-    presione_ctrl_c = true;
-}
 
 /* Parsea input para identidicar el comando y sus argumentos */
 struct comandos *parsear_entrada(char * input) { //usuario escribe algo y transf. las entras a llamada sist.
@@ -272,7 +264,7 @@ void manejar_comando_favs(char **argumentos) {
 				} else if (pid == 0){
 					execvp(cmds[0].argumentos[0], cmds[0].argumentos);
 
-					// Caso que el comando no se reconozca por execvp (item a.7)
+					// Caso que el comando no se reconozca por execvp 
 					printf("Comando Desconocido\n");
 					_exit(127); //Este exit es necesario para saber si fallo el execvp, Exit de comandos not found
 
@@ -307,8 +299,6 @@ int main(){
 	bool agregar_comando;
     // Verifica que se ha creado al menos una vez un comando con el comando cmdmonset
 	bool existe_nombre_comando = false; 
-    // Inicializa variable global que reconoce si se ha presionado o no ctrl + c
-	presione_ctrl_c = false;
     // Captura nombre del usuario para mostrarlo en el prompt
     size_t len = 30;
     char name[len];
@@ -320,14 +310,11 @@ int main(){
     // Condicion de salida de la shell
     bool salir_shell = false;
 
-	// Captura la senal "CTRL+C" y la maneja con la funcion "control_c" (item b.1)
-	signal(SIGINT, control_c);
-
 	// Captura la señal de la alarma y la maneja con la funcion "alarm_handler"
 	signal(SIGALRM, alarm_handler);
 	
     while(!salir_shell){
-        // Prompt con nombre del usuario y color (item a.1)
+        // Prompt con nombre del usuario y color
 		printf("\033[0;36m%s$: ",name);
         printf("\033[0m");
 
@@ -335,38 +322,9 @@ int main(){
 		memset(input,'\0',strlen(input));
 
         // Espera la instruccion por entrada estandar, lo guarda en "input"
-		if(fgets(input, sizeof(input), stdin) == NULL) break;
+		if(fgets(input, sizeof(input), stdin) == NULL) break; 
 
-        // Manejo del "retorno" de la senal "CTRL+C", para volver a mostrar el prompt o finalizar la shell
-		if(presione_ctrl_c == true){
-			bool entrada_correcta = false;
-			bool salir_ctrl_c = false;
-			while(!entrada_correcta){
-				if(strlen(input) == 2){
-					if((input[0] == 'y')||(input[0] == 'Y')){
-						salir_ctrl_c = true;
-						entrada_correcta = true;	
-					}else if((input[0] == 'n')||(input[0] == 'N')){
-						salir_ctrl_c = false;
-						entrada_correcta = true;
-					}
-				}
-				if(entrada_correcta != true){
-					printf("Ingrese una opción válida (Y/N)\n");
-					memset(input,'\0',strlen(input));
-					fgets(input, sizeof(input), stdin);
-				}
-			}
-			if(salir_ctrl_c == true){
-				break;
-			}else{
-				memset(input,'\0',strlen(input));
-				input[0] = '\n';
-				presione_ctrl_c = false;
-			}
-		} 
-
-        // Al presionar "enter" sin un previo comando, imprime nuevamente el prompt (item a.4)
+        // Al presionar "enter" sin un previo comando, imprime nuevamente el prompt 
         if(input[0] == '\n') continue; 
 
         // Remueve el caracter de salto de linea al final del input
@@ -374,11 +332,11 @@ int main(){
             input[strlen(input)-1] = '\0';
         }
 
-        // Parsea el input (item 1.b)
+        // Parsea el input 
 		strcpy(copia_input, input);
         cmds = parsear_entrada(input); // Divide el input en un arreglo de comandos
 
-        // Caso comando "exit" (item a.6)
+        // Caso comando "exit" 
 		if (strcmp(cmds[0].argumentos[0], "exit") == 0){
 			salir_shell = true;
         	break;
@@ -390,7 +348,7 @@ int main(){
             set_recordatorio(segundos, cmds[0].argumentos[3]);
             continue;
         }else {
-            // Caso lectura comando de monitoreo creado (item b.2)
+            // Caso lectura comando de monitoreo creado 
 			if((strcmp(cmds[0].argumentos[0], cm.nombre_comando) == 0)&&(existe_nombre_comando == true)){
 				char monit[60];
 				memset(monit,'\0',strlen(monit));
@@ -416,7 +374,7 @@ int main(){
             if(cmds[i].argumentos[0] != NULL) cantidadcmds++;
         }
 
-		// Caso creacion comando de monitoreo (item b.2)
+		// Caso creacion comando de monitoreo 
 		agregar_comando = false;
 		if(cantidadcmds == 1){
 			if(strcmp(cmds[0].argumentos[0], "cmdmonset") == 0){
@@ -442,7 +400,7 @@ int main(){
 			}
 		}
 
-        // Ejecuta comando (sin pipes, solo 1) (item 1.3)
+        // Ejecuta comando (sin pipes, solo 1) 
         if((cantidadcmds == 1)&&(agregar_comando != true)){
 
 			agregar_favorito(copia_input);
@@ -456,7 +414,7 @@ int main(){
             } else if (pid == 0){
                 execvp(cmds[0].argumentos[0], cmds[0].argumentos);
 
-                // Caso que el comando no se reconozca por execvp (item a.7)
+                // Caso que el comando no se reconozca por execvp 
                 printf("Comando Desconocido\n");
                 _exit(127); //Este exit es necesario para saber si fallo el execvp, Exit de comandos not found
 
@@ -467,7 +425,7 @@ int main(){
             }
         }
 
-        // Ejecuta comandos (mas de 1, con pipes) (item a.5)
+        // Ejecuta comandos (mas de 1, con pipes) 
 	    if(cantidadcmds > 1){
 	    	pid_t pid;
 
@@ -491,7 +449,7 @@ int main(){
 
 		    	execvp(cmds[cantidadcmds - 1].argumentos[0], cmds[cantidadcmds - 1].argumentos);
 
-		    	// Caso que el comando no se reconozca por execvp (item a.7)
+		    	// Caso que el comando no se reconozca por execvp 
 		        printf("Comando Desconocido\n");
 		        _exit(127); // Caso en que execvp produce un fallo
 
