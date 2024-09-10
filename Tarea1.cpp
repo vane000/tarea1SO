@@ -286,8 +286,8 @@ void manejar_comando_favs(char **argumentos) {
 // Función para establecer recordatorio
 void set_recordatorio(int segundos, char *mensaje) {
     printf("Recordatorio establecido para %d segundos: %s\n", segundos, mensaje);
-	strcpy(recordatorio, mensaje);
-	alarm(segundos);
+    strcpy(recordatorio, mensaje);  // Copia el mensaje en la variable global
+    alarm(segundos);                // Establece la alarma
 }
 
 void alarm_handler(int sig){
@@ -345,9 +345,16 @@ int main(){
             continue;
 		} else if (strcmp(cmds[0].argumentos[0], "set") == 0 && strcmp(cmds[0].argumentos[1], "recordatorio") == 0) {
             int segundos = atoi(cmds[0].argumentos[2]);
-            set_recordatorio(segundos, cmds[0].argumentos[3]);
-            continue;
-        }else {
+    
+        // Construir el mensaje completo a partir de todos los argumentos restantes
+            char mensaje[100] = "";
+            for (int i = 3; cmds[0].argumentos[i] != NULL; i++) {
+                strcat(mensaje, cmds[0].argumentos[i]);
+				strcat(mensaje, " ");
+			}
+			set_recordatorio(segundos, mensaje);
+			continue;
+			}else {
             // Caso lectura comando de monitoreo creado 
 			if((strcmp(cmds[0].argumentos[0], cm.nombre_comando) == 0)&&(existe_nombre_comando == true)){
 				char monit[60];

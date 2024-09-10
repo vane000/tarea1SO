@@ -4,6 +4,7 @@
                Lina Cao
                Vanessa Suazo
 
+Link de informe en latex: https://www.overleaf.com/read/gjdptkxtffjp#e00dec
 
 ----------------------------------------------------------------------------------------
 ##### COMPILACIÓN DEL ARCHIVO shell.c en linux: #####
@@ -25,7 +26,7 @@ para comenzar a ejecutar la instrución.
 
 
 ----------------------------------------------------------------------------------------
-##### Comandos FAVS #####
+##### COMANDOS FAVS #####
 Ahora se describira el uso y funcionalidad de los comandos relacionados con favoritos en la shell personalizada implementada en C++. Los comandos "favs" permiten gestionar una lista de comandos favoritos, almacenarlos, cargarlos desde archivos y realizar operaciones como agregar, eliminar, buscar o ejecutar favoritos.
 
 Comandos disponibles
@@ -136,6 +137,27 @@ Ejecutar un favorito:
 * Compatibilidad: Cualquier comando que se pueda ejecutar en la shell puede ser agregado a favoritos.
 
 Este sistema de favoritos es una herramienta útil para guardar y reutilizar comandos frecuentes en la shell.
+
+------------------------------------------------------------------------------------------
+##### RECORDATORIOS #####
+
+La función set_recordatorio se invoca cuando el usuario escribe el comando set recordatorio <tiempo> <mensaje>. El programa interpreta este comando, obtiene el tiempo y el mensaje de los argumentos ingresados por el usuario y establece el recordatorio utilizando la función set_recordatorio.
+
+Ejemplo de Uso
+El usuario puede configurar un recordatorio de la siguiente manera:
+
+	set recordatorio 10 "Toma un descanso"
+
+Este comando hará lo siguiente:
+
+* Configurará un recordatorio para que se active en 10 segundos.
+* Después de 10 segundos, el programa mostrará el mensaje en la consola:
+
+	Recordatorio: Toma un descanso
+
+##### Limitaciones #####
+Sólo puede haber un recordatorio activo a la vez. Si se configura otro recordatorio antes de que el actual haya terminado, el nuevo sobrescribirá al anterior.
+El tiempo del recordatorio se especifica en segundos, por lo que no es posible establecer recordatorios de menos de un segundo ni usar unidades de tiempo más precisas (como milisegundos).
 
 
 ------------------------------------------------------------------------------------------
