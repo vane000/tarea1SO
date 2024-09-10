@@ -1,13 +1,13 @@
 # tarea1SO
 
-- Integrantes: Andres Lartiga
-               Lina Cao
-               Vanessa Suazo
+- Integrantes: Andres Lartiga,
+               Lina Cao,
+               Vanessa Suazo.
 
-Link de informe en latex: https://www.overleaf.com/read/gjdptkxtffjp#e00dec
+* Link de informe en latex: https://www.overleaf.com/read/gjdptkxtffjp#e00dec
 
 ----------------------------------------------------------------------------------------
-##### COMPILACIÓN DEL ARCHIVO shell.c en linux: #####
+##### COMPILACIÓN DEL ARCHIVO Tarea1.cpp en linux: #####
 
 	gcc Tarea1.cpp 
 
